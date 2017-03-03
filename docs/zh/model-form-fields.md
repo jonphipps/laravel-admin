@@ -67,7 +67,7 @@ $form->tab('Basic info', function ($form) {
 
 ```
 
-## Basic Usage
+## 基本使用
 
 ### 文本输入框
 
@@ -95,7 +95,7 @@ $form->select('user_id')->options(function ($id) {
 })->ajax('/admin/api/users');
 ```
 
-url `/admin/api/users`接口的代码：
+API `/admin/api/users`接口的代码：
 
 ```php
 public function users(Request $request)
@@ -173,7 +173,7 @@ $form->select('friends')->options(function ($ids) {
 })->ajax('/admin/api/users');
 ```
 
-url `/admin/api/users`接口的代码：
+API `/admin/api/users`接口的代码：
 
 ```php
 public function users(Request $request)
@@ -216,7 +216,7 @@ public function users(Request $request)
 }
 ```
 
-### textarea输入框:
+### textarea输入框
 ```php
 $form->textarea($column[, $label])->rows(10);
 ```
@@ -257,7 +257,7 @@ $form->ip($column[, $label]);
 
 ### 电话号码输入框
 ```php
-$form->mobile($column[, $label])->format('999 9999 9999');
+$form->mobile($column[, $label])->options(['mask' => '999 9999 9999']);
 ```
 
 ### 颜色选择框
@@ -328,7 +328,7 @@ $form->rate($column[, $label]);
 
 ### 图片上传
 
-使用图片上传功能之前需要先完成上传配置，请参考:[图片/文件上传](/docs/zh/form-upload.md).
+使用图片上传功能之前需要先完成上传配置，请参考:[图片/文件上传](form-upload.md).
 
 图片上传目录在文件`config/admin.php`中的`upload.image`中配置，如果目录不存在，需要创建该目录并开放写权限。
 
@@ -353,7 +353,7 @@ $form->image($column[, $label])->multiple();
 
 ### 文件上传
 
-使用图片上传功能之前需要先完成上传配置，请参考:[图片/文件上传](/docs/zh/form-upload.md).
+使用图片上传功能之前需要先完成上传配置，请参考:[图片/文件上传](form-upload.md).
 
 文件上传目录在文件`config/admin.php`中的`upload.file`中配置，如果目录不存在，需要创建该目录并开放写权限。
 ```php
@@ -371,7 +371,7 @@ $form->file($column[, $label])->multiple();
 
 ### 地图控件
 
-地图组件引用了网络资源，默认关闭,如果要开启这个组件参考[form组件管理](/docs/zh/field-management.md)
+地图组件引用了网络资源，默认关闭,如果要开启这个组件参考[form组件管理](field-management.md)
 
 地图控件，用来选择经纬度,`$latitude`, `$longitude`为经纬度字段，`Laravel`的`locale`设置为`zh_CN`的时候使用腾讯地图，否则使用Google地图：
 ```php
@@ -386,7 +386,7 @@ $form->slider($column[, $label])->options(['max' => 100, 'min' => 1, 'step' => 1
 
 ### 富文本编辑框
 
-编辑器组件引用了网络资源，默认关闭,如果要开启这个组件参考[form组件管理](/docs/zh/field-management.md).
+编辑器组件引用了网络资源，默认关闭,如果要开启这个组件参考[form组件管理](field-management.md).
 
 ```php
 $form->editor($column[, $label]);
@@ -412,6 +412,12 @@ $form->switch($column[, $label])->states($states);
 只显示字段，不做任何操作：
 ```php
 $form->display($column[, $label]);
+
+
+//更复杂的显示
+$form->display($column[, $label])->with(function ($value) {
+    return "<img src="$value" />";
+});
 ```
 
 ### 分割线
@@ -425,19 +431,19 @@ $form->divide();
 $form->html('你的html内容', $label = '');
 ```
 
-### tags
+### 标签
 插入逗号(,)隔开的字符串`tags`
 ```php
 $form->tags('keywords');
 ```
 
-### icon
+### 图标
 选择`font-awesome`图标
 ```php
 $form->icon('icon');
 ```
 
-### hasMany
+### 一对多
 
 一对多内嵌表格，用于处理一对多的关系，下面是个简单的例子：
 
@@ -516,7 +522,7 @@ $form->display('created_at', 'Created At');
 $form->display('updated_at', 'Updated At');
 ```
 
-### embeds
+### 内嵌
 
 用于处理`mysql`的`JSON`类型字段数据或者`mongodb`的`object`类型数据，也可以将多个field的数据值以`JSON`字符串的形式存储在`mysql`的字符创类型字段中
 

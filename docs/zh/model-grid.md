@@ -34,8 +34,8 @@ $grid = Admin::grid(Movie::class, function(Grid $grid){
     // 第二列显示title字段，由于title字段名和Grid对象的title方法冲突，所以用Grid的column()方法代替
     $grid->column('title');
     
-    // 第三列显示director字段，通过value($callback)方法设置这一列的显示内容为users表中对应的用户名
-    $grid->director()->value(function($userId) {
+    // 第三列显示director字段，通过display($callback)方法设置这一列的显示内容为users表中对应的用户名
+    $grid->director()->display(function($userId) {
         return User::find($userId)->name;
     });
     
@@ -45,8 +45,8 @@ $grid = Admin::grid(Movie::class, function(Grid $grid){
     // 第五列显示为rate字段
     $grid->rate();
 
-    // 第六列显示released字段，通过value($callback)方法来格式化显示输出
-    $grid->released('上映?')->value(function ($released) {
+    // 第六列显示released字段，通过display($callback)方法来格式化显示输出
+    $grid->released('上映?')->display(function ($released) {
         return $released ? '是' : '否';
     });
 
@@ -63,12 +63,9 @@ $grid = Admin::grid(Movie::class, function(Grid $grid){
     });
 });
 
-// 显示表格内容
-echo $grid;
-
 ```
 
-## Basic Usage
+## 基本使用方法
 
 #### 添加列
 ```php
@@ -252,7 +249,10 @@ class User extends Model
 
 class Profile extends Model
 {
-    $this->belongsTo(User::class);
+    public function user()
+    {
+        $this->belongsTo(User::class);
+    }
 }
 
 ```
@@ -336,7 +336,7 @@ return Admin::grid(Post::class, function (Grid $grid) {
     $grid->title();
     $grid->content();
 
-    $grid->comments('评论数')->value(function ($comments) {
+    $grid->comments('评论数')->display(function ($comments) {
         $count = count($comments);
         return "<span class='label label-warning'>{$count}</span>";
     });
@@ -424,7 +424,7 @@ return Admin::grid(User::class, function (Grid $grid) {
     $grid->username();
     $grid->name();
 
-    $grid->roles()->value(function ($roles) {
+    $grid->roles()->display(function ($roles) {
 
         $roles = array_map(function ($role) {
             return "<span class='label label-success'>{$role['name']}</span>";
