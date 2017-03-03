@@ -5,6 +5,8 @@ namespace Encore\Admin\Form;
 use Encore\Admin\Admin;
 use Encore\Admin\Form;
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Contracts\Support\Renderable;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -12,8 +14,10 @@ use Illuminate\Support\Facades\Validator;
  *
  * @method Field default($value) set field default value
  */
-class Field
+class Field implements Renderable
 {
+    const FILE_DELETE_FLAG = '__del__';
+
     /**
      * Element id.
      *
@@ -61,14 +65,14 @@ class Field
      *
      * @var string
      */
-    protected $elementName = '';
+    protected $elementName = [];
 
     /**
-     * Form element name.
+     * Form element classes.
      *
      * @var string
      */
-    protected $elementClass = '';
+    protected $elementClass = [];
 
     /**
      * Variables of elements.
@@ -644,7 +648,7 @@ class Field
      */
     public function setElementClass($class)
     {
-        $this->elementClass = $class;
+        $this->elementClass = (array)$class;
 
         return $this;
     }
@@ -652,17 +656,99 @@ class Field
     /**
      * Get element class.
      *
-     * @return string
+     * @return array
      */
     protected function getElementClass()
     {
         if (!$this->elementClass) {
             $name = $this->elementName ?: $this->formatName($this->column);
 
-            $this->elementClass = str_replace(['[', ']'], '_', $name);
+            $this->elementClass = (array)str_replace(['[', ']'], '_', $name);
         }
 
         return $this->elementClass;
+    }
+
+    /**
+     * Get element class string
+     *
+     * @return mixed
+     */
+    protected function getElementClassString()
+    {
+        $elementClass = $this->getElementClass();
+
+        if (Arr::isAssoc($elementClass)) {
+            return $elementClass;
+        }
+
+        return implode(' ', $elementClass);
+    }
+
+    /**
+     * Get element class selector
+     *
+     * @return string
+     */
+    protected function getElementClassSelector()
+    {
+        $elementClass = $this->getElementClass();
+
+        if (Arr::isAssoc($elementClass)) {
+
+            $classes = [];
+
+            foreach ($elementClass as $index => $class) {
+                $classes[$index] = '.' . $class;
+            }
+
+            return $classes;
+        }
+
+        return '.' . implode('.', $elementClass);
+    }
+
+    /**
+     * Add the element class
+     *
+     * @param $class
+     * @return $this
+     */
+    public function addElementClass($class)
+    {
+        if(is_array($class) || is_string($class)){
+
+            $this->elementClass = array_merge($this->elementClass, (array)$class);
+
+            $this->elementClass = array_unique($this->elementClass);
+        }
+
+        return $this;
+    }
+
+
+    /**
+     * Remove element class
+     *
+     * @param $class
+     * @return $this
+     */
+    public function removeElementClass($class)
+    {
+        $delClass = [];
+
+        if(is_string($class) || is_array($class)){
+            $delClass = (array)$class;
+        }
+
+        foreach($delClass as $del){
+            if(($key = array_search($del, $this->elementClass))){
+                unset($this->elementClass[$key]);
+            }
+        }
+
+        return $this;
+
     }
 
     /**
@@ -676,7 +762,7 @@ class Field
             'id'            => $this->id,
             'name'          => $this->elementName ?: $this->formatName($this->column),
             'help'          => $this->help,
-            'class'         => $this->getElementClass(),
+            'class'         => $this->getElementClassString(),
             'value'         => $this->value(),
             'label'         => $this->label,
             'width'         => $this->width,
@@ -723,6 +809,14 @@ class Field
         Admin::script($this->script);
 
         return view($this->getView(), $this->variables());
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->render()->render();
     }
 
     /**

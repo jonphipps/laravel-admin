@@ -62,6 +62,9 @@ use Symfony\Component\HttpFoundation\Response;
  * @method Field\Tags           tags($column, $label = '')
  * @method Field\Icon           icon($column, $label = '')
  * @method Field\Embeds         embeds($column, $label = '')
+ * @method Field\MultipleImage  multipleImage($column, $label = '')
+ * @method Field\MultipleFile   multipleFile($column, $label = '')
+ * @method Field\Captcha        captcha($column, $label = '')
  */
 class Form
 {
@@ -317,10 +320,7 @@ class Form
             $inserts = $this->prepareInsert($this->updates);
 
             foreach ($inserts as $column => $value) {
-                $this->model->setAttribute(
-                    $column,
-                    $this->formatValueBeforeSave($value)
-                );
+                $this->model->setAttribute($column, $value);
             }
 
             $this->model->save();
@@ -346,14 +346,11 @@ class Form
      */
     protected function redirectAfterStore()
     {
-        $success = new MessageBag([
-            'title'   => trans('admin::lang.succeeded'),
-            'message' => trans('admin::lang.save_succeeded'),
-        ]);
+        admin_toastr(trans('admin::lang.save_succeeded'));
 
         $url = Input::get(Builder::PREVIOUS_URL_KEY) ?: $this->resource(0);
 
-        return redirect($url)->with(compact('success'));
+        return redirect($url);
     }
 
     /**
@@ -393,7 +390,7 @@ class Form
             return $response;
         }
 
-        $this->relations = $this->getRelationInputs($data);
+        $this->relations = $this->getRelationInputs($this->inputs);
 
         $updates = array_except($this->inputs, array_keys($this->relations));
 
@@ -479,6 +476,8 @@ class Form
 
         $data = $this->handleEditable($data);
 
+        $data = $this->handleFileDelete($data);
+
         if ($this->handleOrderable($id, $data)) {
             return response([
                 'status'  => true,
@@ -491,6 +490,7 @@ class Form
             return back()->withInput()->withErrors($validationMessages);
         }
 
+        /* @var Model $this->model */
         $this->model = $this->model->with($this->getRelations())->findOrFail($id);
 
         $this->setFieldOriginalValue();
@@ -503,10 +503,8 @@ class Form
             $updates = $this->prepareUpdate($this->updates);
 
             foreach ($updates as $column => $value) {
-                $this->model->setAttribute(
-                    $column,
-                    $this->formatValueBeforeSave($value)
-                );
+                /* @var Model $this->model */
+                $this->model->setAttribute($column, $value);
             }
 
             $this->model->save();
@@ -526,38 +524,17 @@ class Form
     }
 
     /**
-     * Cast values to valid string format.
-     *
-     * For array value, format assoc array to json string, and indexed array to dot nation string.
-     *
-     * @param array|string $value
-     *
-     * @return string
-     */
-    protected function formatValueBeforeSave($value)
-    {
-        if (is_array($value) && !Arr::isAssoc($value)) {
-            $value = implode(',', $value);
-        }
-
-        return $value;
-    }
-
-    /**
      * Get RedirectResponse after update.
      *
      * @return \Illuminate\Http\RedirectResponse
      */
     protected function redirectAfterUpdate()
     {
-        $success = new MessageBag([
-            'title'   => trans('admin::lang.succeeded'),
-            'message' => trans('admin::lang.update_succeeded'),
-        ]);
+        admin_toastr(trans('admin::lang.update_succeeded'));
 
         $url = Input::get(Builder::PREVIOUS_URL_KEY) ?: $this->resource(-1);
 
-        return redirect($url)->with(compact('success'));
+        return redirect($url);
     }
 
     /**
@@ -576,6 +553,22 @@ class Form
             array_forget($input, ['pk', 'value', 'name']);
             array_set($input, $name, $value);
         }
+
+        return $input;
+    }
+
+    /**
+     * @param array $input
+     * @return array
+     */
+    protected function handleFileDelete(array $input = [])
+    {
+        if (array_key_exists(Field::FILE_DELETE_FLAG , $input)) {
+            $input[Field::FILE_DELETE_FLAG] = $input['key'];
+            unset($input['key']);
+        }
+
+        Input::replace($input);
 
         return $input;
     }
@@ -645,10 +638,7 @@ class Form
                     }
 
                     foreach ($prepared[$name] as $column => $value) {
-                        $related->setAttribute(
-                            $column,
-                            $this->formatValueBeforeSave($value)
-                        );
+                        $related->setAttribute($column, $value);
                     }
 
                     $related->save();
@@ -701,7 +691,7 @@ class Form
 
             $value = $this->getDataByColumn($updates, $columns);
 
-            if ($value !== '' && $value !== '0' && !$field instanceof File && empty($value)) {
+            if ($value !== '' && $value !== '0' && empty($value)) {
                 continue;
             }
 
@@ -829,7 +819,7 @@ class Form
      */
     public function ignore($fields)
     {
-        $this->ignored = (array) $fields;
+        $this->ignored = array_merge($this->ignored, (array) $fields);
 
         return $this;
     }
@@ -1016,6 +1006,58 @@ class Form
             $field->setWidth($fieldWidth, $labelWidth);
         });
 
+        $this->builder()->setWidth($fieldWidth, $labelWidth);
+
+        return $this;
+    }
+
+    /**
+     * Set view for form.
+     *
+     * @param string $view
+     *
+     * @return $this
+     */
+    public function setView($view)
+    {
+        $this->builder()->setView($view);
+
+        return $this;
+    }
+
+    /**
+     * Tools setting for form.
+     *
+     * @param Closure $callback
+     */
+    public function tools(Closure $callback)
+    {
+        $callback = $callback->bindTo($this);
+
+        call_user_func($callback, $this->builder->getTools());
+    }
+
+    /**
+     * Disable form submit.
+     *
+     * @return $this
+     */
+    public function disableSubmit()
+    {
+        $this->builder()->options(['enableSubmit' => false]);
+
+        return $this;
+    }
+
+    /**
+     * Disable form reset.
+     *
+     * @return $this
+     */
+    public function disableReset()
+    {
+        $this->builder()->options(['enableReset' => false]);
+
         return $this;
     }
 
@@ -1118,6 +1160,9 @@ class Form
             'html'              => \Encore\Admin\Form\Field\Html::class,
             'tags'              => \Encore\Admin\Form\Field\Tags::class,
             'icon'              => \Encore\Admin\Form\Field\Icon::class,
+            'multipleFile'      => \Encore\Admin\Form\Field\MultipleFile::class,
+            'multipleImage'     => \Encore\Admin\Form\Field\MultipleImage::class,
+            'captcha'           => \Encore\Admin\Form\Field\Captcha::class,
         ];
 
         foreach ($map as $abstract => $class) {

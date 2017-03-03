@@ -2,7 +2,6 @@
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;
-
 use Laravel\Dusk\TestCase as BaseTestCase;
 
 class TestCase extends BaseTestCase
@@ -11,6 +10,7 @@ class TestCase extends BaseTestCase
      * Prepare for Dusk test execution.
      *
      * @beforeClass
+     *
      * @return void
      */
     public static function prepare()
@@ -53,6 +53,8 @@ class TestCase extends BaseTestCase
         $this->migrate();
 
         //$this->artisan('admin:install');
+
+        \Encore\Admin\Facades\Admin::registerAuthRoutes();
 
         if (file_exists($routes = admin_path('routes.php'))) {
             require $routes;

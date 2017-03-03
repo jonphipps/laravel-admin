@@ -33,6 +33,7 @@ return [
     'close'         => 'Close',
     'show'          => 'Show',
     'entries'       => 'entries',
+    'captcha'       => 'Captcha',
 
     'action'           => 'Action',
     'title'            => 'Title',
@@ -50,6 +51,7 @@ return [
     'update_succeeded' => 'Update succeeded !',
     'save_succeeded'   => 'Save succeeded !',
     'refresh_succeeded'=> 'Refresh succeeded !',
+    'login_successful' => 'Login successful',
 
     'choose'        => 'Select',
     'choose_file'   => 'Select file',

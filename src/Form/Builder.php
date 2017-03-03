@@ -41,7 +41,10 @@ class Builder
     /**
      * @var array
      */
-    protected $options = [];
+    protected $options = [
+        'enableSubmit' => true,
+        'enableReset'  => true,
+    ];
 
     /**
      * Modes constants.
@@ -63,6 +66,28 @@ class Builder
     protected $hiddenFields = [];
 
     /**
+     * @var Tools
+     */
+    protected $tools;
+
+    /**
+     * Width for label and field.
+     *
+     * @var array
+     */
+    protected $width = [
+        'label' => 2,
+        'field' => 8,
+    ];
+
+    /**
+     * View for this form.
+     *
+     * @var string
+     */
+    protected $view = 'admin::form';
+
+    /**
      * Builder constructor.
      *
      * @param Form $form
@@ -72,6 +97,24 @@ class Builder
         $this->form = $form;
 
         $this->fields = new Collection();
+
+        $this->setupTools();
+    }
+
+    /**
+     * Setup grid tools.
+     */
+    public function setupTools()
+    {
+        $this->tools = new Tools($this);
+    }
+
+    /**
+     * @return Tools
+     */
+    public function getTools()
+    {
+        return $this->tools;
     }
 
     /**
@@ -123,6 +166,22 @@ class Builder
     }
 
     /**
+     * @param int $field
+     * @param int $label
+     *
+     * @return $this
+     */
+    public function setWidth($field = 8, $label = 2)
+    {
+        $this->width = [
+            'label' => $label,
+            'field' => $field,
+        ];
+
+        return $this;
+    }
+
+    /**
      * Set form action.
      *
      * @param string $action
@@ -155,6 +214,20 @@ class Builder
     }
 
     /**
+     * Set view for this form.
+     *
+     * @param string $view
+     *
+     * @return $this
+     */
+    public function setView($view)
+    {
+        $this->view = $view;
+
+        return $this;
+    }
+
+    /**
      * Get fields of this builder.
      *
      * @return Collection
@@ -162,6 +235,20 @@ class Builder
     public function fields()
     {
         return $this->fields;
+    }
+
+    /**
+     * Get specify field.
+     *
+     * @param string $name
+     *
+     * @return mixed
+     */
+    public function field($name)
+    {
+        return $this->fields()->first(function (Field $field) use ($name) {
+            return $field->column() == $name;
+        });
     }
 
     /**
@@ -301,17 +388,47 @@ class Builder
     }
 
     /**
-     * Build submit button.
+     * Submit button of form..
      *
      * @return string
      */
-    public function submit()
+    public function submitButton()
     {
         if ($this->mode == self::MODE_VIEW) {
             return '';
         }
 
-        return '<button type="submit" class="btn btn-info pull-right">'.trans('admin::lang.submit').'</button>';
+        if (!$this->options['enableSubmit']) {
+            return '';
+        }
+
+        $text = trans('admin::lang.submit');
+
+        return <<<EOT
+<div class="btn-group pull-right">
+    <button type="submit" class="btn btn-info pull-right">$text</button>
+</div>
+EOT;
+    }
+
+    /**
+     * Reset button of form.
+     *
+     * @return string
+     */
+    public function resetButton()
+    {
+        if (!$this->options['enableReset']) {
+            return '';
+        }
+
+        $text = trans('admin::lang.reset');
+
+        return <<<EOT
+<div class="btn-group pull-left">
+    <button type="reset" class="btn btn-warning">$text</button>
+</div>
+EOT;
     }
 
     /**
@@ -347,52 +464,48 @@ class Builder
 
         $tabObj = $this->form->getTab();
 
-        $script = <<<'SCRIPT'
-        
-$('.form-history-back').on('click', function () {
-    event.preventDefault();
-    history.back(1);
-});
-
-SCRIPT;
-
         if (!$tabObj->isEmpty()) {
-            $script .= <<<'SCRIPT'
+            $script = <<<'SCRIPT'
 
-var url = document.location.toString();
-if (url.match('#')) {
-    $('.nav-tabs a[href="#' + url.split('#')[1] + '"]').tab('show');
+var hash = document.location.hash;
+if (hash) {
+    $('.nav-tabs a[href="' + hash + '"]').tab('show');
 }
-        
+
 // Change hash for page-reload
 $('.nav-tabs a').on('shown.bs.tab', function (e) {
-    window.location.hash = e.target.hash;
+    history.pushState(null,null, e.target.hash);
 });
 
 if ($('.has-error').length) {
-    $('.has-error').parent().each(function () {
-        var tabId = '#'+$(this).attr('id');
+    $('.has-error').each(function () {
+        var tabId = '#'+$(this).closest('.tab-pane').attr('id');
         $('li a[href="'+tabId+'"] i').removeClass('hide');
     });
     
-    var first = $('.has-error:first').parent().attr('id');
+    var first = $('.has-error:first').closest('.tab-pane').attr('id');
     $('li a[href="#'+first+'"]').tab('show');
 }
 
 SCRIPT;
+            Admin::script($script);
         }
-
-        Admin::script($script);
-
-        $slice = $this->mode == static::MODE_CREATE ? -1 : -2;
 
         $data = [
             'form'     => $this,
-            'resource' => $this->form->resource($slice),
             'tabObj'   => $tabObj,
+            'width'    => $this->width,
         ];
 
-        return view('admin::form', $data)->render();
+        return view($this->view, $data)->render();
+    }
+
+    /**
+     * @return string
+     */
+    public function renderHeaderTools()
+    {
+        return $this->tools->render();
     }
 
     /**
