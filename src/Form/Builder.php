@@ -156,10 +156,13 @@ class Builder
     /**
      * @return string
      */
-    public function getResource()
+    public function getResource($slice = null)
     {
         if ($this->mode == self::MODE_CREATE) {
             return $this->form->resource(-1);
+        }
+        if ($slice !== null) {
+            return $this->form->resource($slice);
         }
 
         return $this->form->resource();
@@ -283,6 +286,25 @@ class Builder
         }
 
         $this->options = array_merge($this->options, $options);
+    }
+
+    /**
+     * Get or set option.
+     *
+     * @param string $option
+     * @param mixed $value
+     *
+     * @return $this
+     */
+    public function option($option, $value = null)
+    {
+        if (func_num_args() == 1) {
+            return array_get($this->options, $option);
+        }
+
+        $this->options[$option] = $value;
+
+        return $this;
     }
 
     /**
@@ -482,7 +504,7 @@ if ($('.has-error').length) {
         var tabId = '#'+$(this).closest('.tab-pane').attr('id');
         $('li a[href="'+tabId+'"] i').removeClass('hide');
     });
-    
+
     var first = $('.has-error:first').closest('.tab-pane').attr('id');
     $('li a[href="#'+first+'"]').tab('show');
 }
