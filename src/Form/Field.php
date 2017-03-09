@@ -70,7 +70,7 @@ class Field implements Renderable
     /**
      * Form element classes.
      *
-     * @var string
+     * @var array
      */
     protected $elementClass = [];
 
@@ -395,6 +395,18 @@ class Field implements Renderable
     protected function getRules()
     {
         return $this->rules;
+    }
+
+    /**
+     * Remove a specific rule.
+     *
+     * @param string $rule
+     *
+     * @return void
+     */
+    protected function removeRule($rule)
+    {
+        $this->rules = str_replace($rule, '', $this->rules);
     }
 
     /**
